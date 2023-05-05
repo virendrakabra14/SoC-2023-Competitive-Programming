@@ -3,6 +3,7 @@ banner.png
 template/*
 pts.txt
 *.exe
+tmp_recordings/*
 
 # https://github.com/github/gitignore/blob/main/TeX.gitignore
 
