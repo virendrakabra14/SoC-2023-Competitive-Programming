@@ -1,0 +1,155 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[T1]{fontenc}    % https://tex.stackexchange.com/questions/453540/
+\usepackage{csquotes}       % https://www.overleaf.com/learn/latex/Typesetting_quotations
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Competitive Programming}
+\rhead{Week-3}
+\cfoot{\thepage}
+
+\newcommand{\B}[1]{\textbf{#1}}
+\newcommand{\I}[1]{\textit{#1}}
+\newcommand{\T}[1]{\texttt{#1}}
+\newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+\newcommand{\image}[2]{\
+    \begin{center}\
+        \includegraphics[width = #1\linewidth]{#2}\
+    \end{center}\
+}
+
+\title{\textbf{SoC 2023: Competitive Programming \\ {\Large Week-3: Graphs}}}
+\author{Mentor: Virendra Kabra}
+\date{Summer 2023}
+
+\begin{document}
+\begin{sloppypar}       % for overfull, etc.
+
+    \maketitle
+    \tableofcontents
+    \thispagestyle{empty}
+
+    \newpage
+    % \setcounter{page}{1}
+
+    \par \noindent This discussion roughly follows Chapter-7 from an \href{https://link.springer.com/book/10.1007/978-3-030-39357-1}{updated version of the handbook}.
+
+    \section{Terminology}
+
+    A graph is a structure consisting of \I{nodes} (\I{vertices}) and \I{edges}.
+
+    \image{0.85}{../images/terms_1.png}
+    \image{0.85}{../images/terms_2.png}
+
+    \newpage
+
+    \begin{itemize}
+        \item Graph $G$ is represented as $(V, E)$. Set of vertices $V$, set of edges $E$. The first graph has $V = \{1,2,3,4,5\}$ and $E = \{(1,2), (1,3), (1,4), (2,4), (2,5), (3,4), (4,5)\}$.
+        \item Adjacent vertices (neighbors): Vertices connected with an edge
+        \item Degree of vertex $v$: Number of neighbors of $v$. For directed graphs, \I{in-degree} and \I{out-degree} are defined.
+        \item Path from $a$ to $b$: Represented with a sequence of vertices $v_0=a, v_1, \dots, v_{k-1}, v_k=b$ such that $v_i$ and $v_{i+1}$ are neighbors. The length of a path is the number of edges in it. Path $u_0, \dots, u_k$ is a cycle if $u_0 = u_k$.
+        \item A graph is \I{connected} if there is a path between any two vertices. Connected parts of a graph are called \I{connected components}. For example, a connected graph has a single connected component.
+        \item Tree: A \B{connected} graph with \B{no cycles}. Properties:
+        \begin{itemize}
+            \item A tree on $n$ nodes has exactly $n-1$ edges.
+            \item Any connected graph on $n$ nodes and $n-1$ edges is a tree.
+            \item Any graph on $n$ nodes with less than $n-1$ edges is disconnected. Removing $k\le n-1$ edges from a tree gives $k+1$ connected components.
+            \item There exists a \I{unique} path between any two vertices.
+        \end{itemize}
+        \item Directed graphs have directed edges. For such graphs, edges $(a,b)$ and $(b,a)$ are not the same.
+        \item Weighted graphs have weights associated with edges. For example, distance between two cities (nodes).
+        \item Some special classes of graphs
+        \begin{itemize}
+            \item Simple graphs: Do not have multiple edges between the same pair of nodes, and do not have self loops. For such graphs, $0\le |E|\le {|V| \choose 2}$. A \I{complete} graph has edges between all pairs of vertices. In later sections, we deal with simple graphs only.
+            \item Bipartite graphs:
+            \image{0.5}{../images/bipart.png}
+        \end{itemize}
+    \end{itemize}
+
+    \newpage
+
+    \section{Representation}
+    Simple graph $G=(V,E)$ with $|V|=n$ and $|E|=m$.
+    \begin{itemize}
+        \item Adjacency list
+        \item Adjacency matrix. Requires $O(n^2)$ space.
+        \item Edge list
+    \end{itemize}
+    \image{0.9}{../images/representation\_clrs.png}
+    Check code files for an implementation.
+
+    \newpage
+
+    \section{Traversal}
+    We discuss DFS and BFS. Given a starting node, all nodes are \I{visited} in some order. Each node and edges is visited once, giving a complexity $O(|V|+|E|)$ for both traversals. Code files contain an implementation.
+
+    \subsection{Depth-First Search}
+    Follows a single path in the graph till new nodes are found. Then returns to previous nodes and begins exploration of other parts of the graph. Usually implemented with recursion.
+    \image{0.8}{../images/dfs.png}
+
+    \subsection{Breadth-First Search}
+    Visits nodes in increasing order of their distance from the starting node. A queue is maintained.
+    \image{0.8}{../images/bfs.png}
+    
+    \par \noindent For disconnected graphs, these can be called on one vertex in each component to traverse the entire graph.
+
+    \subsection{Applications}
+    Consider undirected graphs.
+    \begin{itemize}
+        \item Check if graph is connected: Perform traversal from one node. If some node is not visited, the graph is disconnected.
+        \item Detect cycle: A visited node (other than the current node's parent) is encountered in traversal.
+        \item Check is graph is bipartite: Observe from the image that $G$ can be 2-colored. Perform traversal from a node $s$; color it $0$ (for example, \T{visited[s] = 0}). Alternately assign colors $1$ and $0$. If a neighbor is already colored, and with the same color as current, the graph is not bipartite.
+    \end{itemize}
+    Check code files later.
+
+    \newpage
+
+    \section{Shortest Paths}
+    Given graph $G$ and vertices $a$ and $b$, find the shortest path between them. For unweighted graphs, BFS suffices.
+    \par \noindent Now we deal with weighted graphs. Note that for a graph with negative cycles, shortest paths may not be defined, as their lengths can be $-\infty$. For example, shortest path from $1$ to $4$ below.
+    \image{0.4}{../images/neg_cycle.png}
+
+    \subsection{Single Source Shortest Paths}
+    Find shortest paths from a given \I{source} vertex to all other vertices.
+
+    \subsubsection{Dijkstra's Algorithm}
+    It is required that there be no negative weight edges in the graph. A priority queue of nodes is maintained, to get the unvisited node with smallest current distance. Complexity $O(m\log n)$.
+    \image{0.8}{../images/dijkstra.png}
+
+    \subsubsection{Bellman Ford Algorithm}
+    Allows negative weight edges, and detects negative cycles. It consists of $n$ rounds, and in each round the algo goes through all edges, attempting to reduce current smallest distances. Implemented with edge-list representation. Complexity: $O(nm)$.
+    \image{0.8}{../images/bellman-ford.png}
+    If the last round reduces any distances, there is a negative cycle.
+
+    \subsection{All Pairs Shortest Paths}
+    Find shortest paths between all pairs of vertices.
+    \subsubsection{Floyd Warshall Algorithm}
+    An adjacency matrix with (smallest) distance entries is maintained. The algorithm consists of consecutive rounds, and on each round, it selects a new node that can act as an intermediate node in paths from now on, and reduces distances using this node. Complexity: $O(n^3)$.
+    \image{0.8}{../images/floyd-warshall.png}
+    Simulation starting with nodes $1$ and $2$.
+
+    \newpage
+
+    \section{Directed Acyclic Graphs (DAGs)}
+    
+    Directed graph with no directed cycles.
+    \image{0.3}{../images/dag.png}
+
+    \subsection{Topological Sort}
+    \begin{itemize}
+        \item An ordering of vertices such that if there is a directed edge $(u,v)$, then $u$ appears before $v$ in this ordering. Some orderings for the above DAG:
+        \image{0.6}{../images/topsorts.png}
+        Note that all edges go from left to right.
+    \end{itemize}
+
+\end{sloppypar}
+\end{document}

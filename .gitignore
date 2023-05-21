@@ -4,6 +4,8 @@ template/*
 pts.txt
 *.exe
 tmp_recordings/*
+tmp_files/*
+images/*
 
 # https://github.com/github/gitignore/blob/main/TeX.gitignore
 
