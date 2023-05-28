@@ -1,0 +1,176 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[T1]{fontenc}    % https://tex.stackexchange.com/questions/453540/
+\usepackage{csquotes}       % https://www.overleaf.com/learn/latex/Typesetting_quotations
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Competitive Programming}
+\rhead{Week-4}
+\cfoot{\thepage}
+
+\newcommand{\B}[1]{\textbf{#1}}
+\newcommand{\I}[1]{\textit{#1}}
+\newcommand{\T}[1]{\texttt{#1}}
+\newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+\newcommand{\image}[2]{\
+    \begin{center}\
+        \includegraphics[width = #1\linewidth]{#2}\
+    \end{center}\
+}
+
+\title{\textbf{SoC 2023: Competitive Programming \\ {\Large Week-4: Divide-Conquer, Greedy, DSU}}}
+\author{Mentor: Virendra Kabra}
+\date{Summer 2023}
+
+\begin{document}
+\begin{sloppypar}       % for overfull, etc.
+
+    \maketitle
+    \tableofcontents
+    \thispagestyle{empty}
+
+    \newpage
+    % \setcounter{page}{1}
+
+    \section{Divide and Conquer}
+
+    \begin{itemize}
+        \item Idea is to split the problem into subproblems, solve them recursively, and finally merge the results.
+        \item Mergesort is a good example
+        \image{0.7}{../images/mergesort.png}
+    \end{itemize}
+
+    \subsection{Time Complexity}
+    \begin{itemize}
+        \item The solution can be thought of as a tree.
+        \item For mergesort, height of this tree is $O(\log n)$, where $n$ is the size of array. In each step, we do $O(n)$ work of splitting and merging. So, overall complexity is $O(n\log n)$.
+        \item This can also be done with a recurrence. Let $T(n)$ be the time complexity taken for an input of length $n$. Then,
+        $$T(n) = 2\cdot T\bigg(\frac{n}{2}\bigg) + O(n)$$
+        This can be solved with a tree as above
+        \image{0.8}{../images/rec-tree-1.png}
+        Each level adds up a cost of $n$, and there are $\log n$ levels.
+        \item Another example
+        $$T(n) = T\bigg(\frac{n}{10}\bigg) + T\bigg(\frac{9n}{10}\bigg) + O(n)$$
+        \image{0.8}{../images/rec-tree-2.png}
+        Right-most branch is the longest, with a length $O(\log_{\frac{10}{9}} n)$.
+        \item More examples in CLRS Section 4.4
+    \end{itemize}
+
+    \subsection{Examples}
+    Code in files.
+    \begin{itemize}
+        \item Counting Inversions. \href{https://homes.cs.washington.edu/~jrl/teaching/cse312au10/lec24.pdf}{Reference}.\\
+        For array \T{a}, \T{(i,j)} is an inversion pair if \T{i<j} and \T{a[i]>a[j]}. $O(n^2)$ approach is to iterate over all index pairs.
+        \image{0.8}{../images/inv-1.png}
+        \noindent \par To combine, considering pairs from the two sub-parts gives a recurrence $T(n) = 2\cdot T(\frac{n}{2}) + O(n^2)$, that is $T(n) = O(n^2)$.
+        \noindent \par What if the two sub-arrays are sorted? Inversion pairs can be counted in $O(n)$. To maintain the `sorted' invariant for earlier layers of the recurrence tree, we also need to merge these arrays. This can be done in $O(n)$ (merge routine of mergesort).\\
+        In the merging process, we compare first elements of subarrays. For example, $3>2$. Since arrays are sorted, all elements in left are greater than $2$, and we add $6$ to the inversion count.
+        \image{0.8}{../images/inv-2.png}
+        \item \href{https://codeforces.com/problemset/problem/1400/E}{Codeforces 1400E}
+        \image{0.95}{../images/cf-1400-e.png}
+        Examples: \T{[1, 4, 1, 1]} outputs \T{2}, and \T{[1, 0, 1, 0, 1]} outputs \T{3}. The array represents frequencies, and goal is to make all elements zero.
+        \begin{itemize}
+            \item $n\le 5000$, so $O(n^2)$ would work.
+            \item Observation: For any subarray, it is not optimal to perform Type-1 operations (on any of its parts) after any Type-2 operation. Consider the array \T{[2, 3, 1, 4]}. Apply operations in the order 2 ($i=2, x=1$), 1 to get \T{[1, 1, 0, 3]}. This could be obtained with 1, 2 ($i=2, x=1$) as well. Operations 2 ($i=2, x=3$), 1, 1 on the initial array give \T{[1, 0, 0, 3]}, which can be obtained with lesser number of operations 1, 2 ($i=2, x=2$).
+            \item Further, solution with only Type-2 takes $n$ operations.
+            \item A divide-and-conquer approach: We have two choices
+            \begin{enumerate}
+                \item Use Type-1 operations to bring the smallest element to 0, then recursively find min ops for subarrays
+                \item Use Type-2 operations only
+            \end{enumerate}
+        \end{itemize}
+        Complexity: $O(n^2)$ in the worst case.
+    \end{itemize}
+
+    \newpage
+
+    \section{Greedy}
+    Make locally optimal solutions to get to a globally optimal solution. There can be many greedy strategies to a problem, most (or all) of them not being optimal.
+    
+    \subsection{Examples}
+    \begin{itemize}
+        \item Activity Scheduling. We saw parts of this in Sorting. Given a set $S = {a_1, \dots, a_n}$ of $n$ activities, and can do only one activity at a time. Each activity has a start time and a finish time. Activities are compatible if their intervals do not overlap.
+        \noindent \par We wish to select a maximum-size subset of mutually compatible activities. An exponential-time algorithm is to iterate over all possible subsets.
+        \noindent \par Greedy strategies that do not work: Counterexamples to prove them non-optimal.
+        \begin{itemize}
+            \item Select activities greedily by smallest start time.\\
+            Counterexample: $\{(0,10), (1,2), (3,4), (5,6)\}$ - first interval overlaps with rest all.
+            \item Select an interval with the least number of overlaps with other intervals
+            \image{0.7}{../images/act-sched-1.png}
+            Get $\{1, 6, 11\}$, optimal is $\{1, 5, 7, 11\}$.
+            \item Select the shortest interval (and repeat). Counterexample: $\{(1,10), (8,11), (11,20)\}$.
+        \end{itemize}
+        Optimal greedy strategy is to select an interval with smallest \I{end} time. Remove any intervals that overlap with this, and repeat.\\
+        \noindent Proof: For any optimal solution, we can always replace the first interval with the interval having smallest end time. Doing this repeatedly will give us an optimal interval set. Alternatively, this would also work with largest start times.
+
+        \item Interval-graph coloring problem. Find the minimum number of lecture halls for all classes.
+        \image{0.7}{../images/int-graph.png}
+        Start with $A$ in hall $1$. Halls $2$, $3$, and $4$ for $B$, $C$, and $D$. Reuse $1$ for $E$, and so on.\\
+        \noindent Greedy strategy: Sort activities by start time. For each activity, schedule it in the first empty lecture hall. If no such hall exists, assign a new hall.\\
+        \noindent Optimality Proof: The $m^{th}$ hall is added only when the first $m-1$ are occupied at the moment. So, there are at least $m$ overlapping intervals, requiring at least $m$ halls.
+
+        \item Dijkstra's algorithm is greedy, choosing the node with \I{current} smallest distance.
+
+        \item Minimum Spanning Tree (MST) of a graph.\\
+        \noindent Spanning Trees:
+        \image{0.7}{../images/span-tree.png}
+        \noindent MST: Spanning tree with minumum weight.
+        \image{0.9}{../images/mst.png}
+        \noindent Kruskal's algorithm for MST: Select the smallest-weight edge that does not form a cycle with edges selected earlier.
+        \begin{enumerate}
+            \item Sort edges in increasing order of weights.
+            \item At each step, select an edge with the above property.
+        \end{enumerate}
+        $1$ takes $O(m\log m)$. $2$ can be done in $O(m^2)$ with cycle-detection ($O(m)$ traversal) at each step. This is sped up using Disjoint-Set Union data structure.
+    \end{itemize}
+
+    \newpage
+
+    \section{Disjoint-Set Union (DSU)}
+    Aka Union-Find, owing to its two main operations.\\
+    We are given several sets of elements. Each set has a \I{representative} element (boldface).
+    \image{0.5}{../images/dsu-1.png}
+    Operations:
+    \begin{itemize}
+        \item \T{make\_set(v)} - Initialization
+        \item \T{get(v)} - Return representative of set that \T{v} belongs to
+        \item \T{union\_sets(a, b)} - Combine the sets that \T{a} and \T{b} belong to
+    \end{itemize}
+
+    \subsection{Array Implementation}
+    \image{0.9}{../images/dsu-2.png}
+    \begin{itemize}
+        \item \T{get(v)} - Access the representative array.
+        \item \T{union\_sets(a, b)} - Find representatives, and combine sets. This is costly, as we need to copy entire arrays for each union.
+    \end{itemize}
+
+    \subsection{Tree Implementation}
+    \image{0.5}{../images/dsu-3.png}
+    The implementation just uses a \T{parent} array:
+    \image{0.9}{../images/dsu-4.png}
+    Note: \T{parent[i]} is \T{i} if and only if \T{i} is a representative element.
+    \begin{itemize}
+        \item \T{get(v)} - Traverse up the tree with \T{parent}, and return the root. This is costly for long branches.
+        \item \T{union\_sets(a, b)} - Find representatives \T{r} and \T{s} using \T{get}. To prevent long branches, we merge the smaller (by size) set into the larger one. Let \T{r} represent the smaller set. Then, set \T{parent[r] = s}. This is called ``Union by size''. Another optimization ``Union by rank'' gives an equivalent complexity.
+    \end{itemize}
+
+    This gives $O(\log n)$ complexity for both operations.\\
+    \noindent \par It is further improved using ``Path Compression'':
+    \image{0.8}{../images/dsu-5.png}
+    
+    Code in file. Overall time complexity: \href{https://cp-algorithms.com/data_structures/disjoint_set_union.html#time-complexity}{Reference}.
+
+    \section{Todos}
+    Check sheet.
+
+\end{sloppypar}
+\end{document}
