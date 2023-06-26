@@ -1,0 +1,127 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[T1]{fontenc}    % https://tex.stackexchange.com/questions/453540/
+\usepackage{csquotes}       % https://www.overleaf.com/learn/latex/Typesetting_quotations
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Competitive Programming}
+\rhead{Week-5}
+\cfoot{\thepage}
+
+\newcommand{\B}[1]{\textbf{#1}}
+\newcommand{\I}[1]{\textit{#1}}
+\newcommand{\T}[1]{\texttt{#1}}
+\newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+\newcommand{\image}[2]{\
+    \begin{center}\
+        \includegraphics[width = #1\linewidth]{#2}\
+    \end{center}\
+}
+
+\title{\textbf{SoC 2023: Competitive Programming \\ {\Large Week-5: Dynamic Programming}}}
+\author{Mentor: Virendra Kabra}
+\date{Summer 2023}
+
+\begin{document}
+\begin{sloppypar}       % for overfull, etc.
+
+    \maketitle
+    \tableofcontents
+    \thispagestyle{empty}
+
+    \newpage
+    % \setcounter{page}{1}
+
+    \section{Basics}
+    Dynamic Programming is similar to recursion - solving subproblems and combining them. In problems involving optimization (e.g., finding minimum cost to do a task), this is known as ``optimal substructre'' - optimal solutions to a problem involve optimal solutions to subproblems.
+    \\
+    \noindent Computation of Fibonacci numbers: \href{http://courses.csail.mit.edu/6.006/fall09/lecture_notes/lecture18.pdf}{Image Ref}
+    \image{0.8}{../images/fib-1.png}
+
+    \noindent Memoization: Storing values of subproblems after computation is an important idea in DP. This helps when there is a reuse of values - ``overlapping subproblems''. Here, space of computed values is only $\{F_1, \dots, F_n\}$, but the method has an exponential complexity, indicating that same values are being computed repeatedly.
+    \image{0.8}{../images/fib-2.png}
+
+    Code: recursive and iterative.
+
+    \newpage
+
+    \section{Examples}
+
+    \begin{itemize}
+        \item Binomial Coefficients. We saw a way to compute ${n \choose k} \Mod{p}$ earlier.
+        \begin{itemize}
+            \item Recursion: ${n \choose k} = {n-1 \choose k} + {n-1 \choose k-1}$
+            \item Memoization: Observe that values are being used repeatedly. Two indices are involved, so we use a 2D matrix as memo. Can also use a \T{map<pair<int, int>, ll>} instead. Since the space of indices is known (and small), it is better (lower complexity) to use a matrix
+            \item Iterative version: Start with base cases, and fill up the matrix in order using recurrence relation.
+            \image{0.7}{../images/bin-coeff.png}
+        \end{itemize}
+        Code.
+
+        \item Subset Sum. Given an array $S$ of non-negative integers $\{a_1, \dots, a_n\}$ and a target value $B$, determine if there
+        is a subset with sum $B$. Each number can be taken at most once.
+        \begin{itemize}
+            \item Na\"ive method: Iterate over all subsets. Complexity: $O(n\cdot 2^n)$.
+            \item Recurrence: Make cases on the last element - it can/cannot be in the subset. This gives two subproblems.
+            $$sol(S, B) = sol(S\setminus\{a_n\}, B-a_n)\ ||\ sol(S\setminus\{a_n\}, B)$$
+            For implementation, only set indices are considered:
+            $$sol(n,B) = sol(n-1,B-a_n)\ ||\ sol(n-1,B)$$
+            \item Again, subproblems repeat. Memoize using 2D array.
+        \end{itemize}
+
+        \item 0-1 Knapsack Problem. Given weights and prices of n items ($\{w_1,\dots,w_n\}$ and $\{p_1,\dots,p_n\}$ (all non-negative)), put items in a knapsack of capacity $W$ to get the maximum total value in the knapsack.
+        \begin{itemize}
+            \item Similar to subset sum, last item can/cannot be included in the final subset.
+            $$maxval(n,W) = \max(maxval(n-1,W-w_n)+p_n, maxval(n-1,W))$$
+            \item Memoize with a 2D array.
+        \end{itemize}
+        Code.
+
+        \item Unbounded Knapsack. \href{https://www.geeksforgeeks.org/unbounded-knapsack-repetition-items-allowed/}{Reference}.
+        
+        \item Longest Increasing Subsequence (LIS). Given an array of size $n$, find the length of the longest subsequence such that all elements of the subsequence are in increasing order. For example, the length of LIS for $\{10, 22, 9, 33, 21, 50, 41, 60, 80\}$ is 6 ($\{10, 22, 33, 50, 60, 80\}$ and others).
+        \begin{itemize}
+            \item Recurrence: Define $LIS(i)$ to be length of LIS from $[0,i]$. Then
+            $$LIS(i) = \max_{j<i\ \text{and}\ a_j\le a_i}{LIS(j)+1}$$
+        \end{itemize}
+
+        \item Matrix Parenthesization.
+        \begin{itemize}
+            \item Define the cost of multiplying two matrices $A$ ($m\times n$) and $B$ ($n\times p$) be $m\cdot n\cdot p$. Cost can be thought of as the number of operations.
+
+            \noindent Given multiplication-compatible matrices $\{A_1,\dots,A_n\}$ with dimensions $\{d_1,d_2,\dots,d_n,d_{n+1}\}$, find a parenthesization so that cost is minimized.
+
+            \noindent Example: $A_1, A_2, A_3$ with sizes $10\times 100, 100\times 5, 5\times 50$.
+            \begin{enumerate}
+                \item $(A_1 A_2)A_3$ has cost $5000+2500 = 7500$
+                \item $A_1(A_2 A_3)$ has cost $25000+50000 = 75000$
+            \end{enumerate}
+            \item Recursion: Subproblems for $A_i\dots A_j$ are $(A_i\dots A_k)(A_{k+1}\dots A_j)$.
+            $$cost(i,j) = \min_{i\le k < j}{cost(i,k) + cost(k+1,j) + d_i\cdot d_{k+1}\cdot d_{j+1}}$$
+            \item Overlapping subproblems:
+            \image{0.9}{../images/mat-paren.png}
+            \noindent To memoize, we need a 2D-array. For order of filling, notes
+            \begin{enumerate}
+                \item Base cases: $cost(i,i)$ for all $i$.
+                \item $cost(i,j)$ needs $\{cost(i,i),\dots,cost(i,j-1)\}$ and $\{cost(i+1,j),\dots,cost(j,j)\}$.
+            \end{enumerate}
+            \image{0.5}{../images/mat-paren-2.png}
+        \end{itemize}
+
+        \item Palindrome Partitioning. Similar to above. \href{https://www.geeksforgeeks.org/palindrome-partitioning-dp-17/}{Reference}.
+    \end{itemize}
+
+    \section{Todos}
+    First five problems from CSES.
+
+
+\end{sloppypar}
+\end{document}
