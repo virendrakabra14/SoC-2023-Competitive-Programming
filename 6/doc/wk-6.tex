@@ -1,0 +1,185 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[T1]{fontenc}    % https://tex.stackexchange.com/questions/453540/
+\usepackage{csquotes}       % https://www.overleaf.com/learn/latex/Typesetting_quotations
+\usepackage{listings}       % https://www.overleaf.com/learn/latex/Code_listing
+\usepackage{xcolor}
+\usepackage{mathtools}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Competitive Programming}
+\rhead{Week-6}
+\cfoot{\thepage}
+
+\newcommand{\B}[1]{\textbf{#1}}
+\newcommand{\I}[1]{\textit{#1}}
+\newcommand{\T}[1]{\texttt{#1}}
+\newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+\newcommand{\image}[2]{\
+    \begin{center}\
+        \includegraphics[width = #1\linewidth]{#2}\
+    \end{center}\
+}
+
+\title{\textbf{SoC 2023: Competitive Programming \\ {\Large Week-6: Range Queries}}}
+\author{Mentor: Virendra Kabra}
+\date{Summer 2023}
+
+\begin{document}
+\begin{sloppypar}       % for overfull, etc.
+
+    \maketitle
+    \tableofcontents
+    \thispagestyle{empty}
+
+    \newpage
+    % \setcounter{page}{1}
+
+    \section{Range Queries}
+    Given an array \T{a} of size $n$, answer multiple queries of the form $(l,r)$. Common examples are sum and minimum of \T{a[l\dots r]}. Some problems may also have updates to the array.
+
+    \section{Prefix arrays}
+
+    For an operation $f$, $p[i] = f(a[0,\dots,i])$. Example: sum
+
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|c|c|}
+            \hline
+            \T{a} & 1 & 3 & 0 & -2 & 5 \\
+            \hline
+            \T{p} & 1 & 4 & 4 & 2 & 7 \\
+            \hline
+        \end{tabular}
+    \end{center}
+
+    \noindent Can be used for
+    \begin{itemize}
+        \item Any operation with $(0,r)$ queries. Examples: max, min of ${a[0,\dots,r]}$.
+        \item Invertible operations with $(l,r)$ queries. Examples: $\sum_{i=l}^{r}a[i] = \sum_{i=0}^{r}a[i] - \sum_{i=0}^{l-1}a[i]$, product.
+    \end{itemize}
+
+    \noindent Above queries are $O(1)$. Updates are costly ($O(n)$). Good with immutable arrays.\\
+    Code.
+
+    \section{Sparse Table}
+    \href{https://cp-algorithms.com/data_structures/sparse-table.html}{Reference}.
+
+    \image{0.9}{../images/st.png}
+
+    \begin{itemize}
+        \item Any number can be uniquely expressed as sum of distinct powers of two. This follows from binary representation of the number. For example, $22 = (10110)_2 = 2^4 + 2^2 + 2^1$.
+        \item Similarly, any interval $[l,r]$ can be expressed as union of intervals with lengths being distinct powers of two. For example, $[5,26] = [5,20] \cup [21,25] \cup [25,26]$.
+        \item Idea of sparse tables is to precompute all range queries with length being powers of two.
+        \item A 2-D array $st$ is used, with $st[i][j]$ holding the result for $[j, j+2^i-1]$ (length $2^i$).
+        \begin{itemize}
+            \item For an array with $n$ elements, $2^i-1 < j+2^i-1 < n$, so the first dimension is $\lfloor \log_2{n}\rfloor$
+            \item $[j,j+2^i-1] = [j,j+2^{i-1}-1]\cup [j+2^{i-1},j+2^i-1]$. Recurrence:
+            $$st[i][j] = f(st[i-1][j], st[i-1][j+2^{i-1}])$$
+        \end{itemize}
+    \end{itemize}
+
+    \noindent Above queries are $O(\log n)$. Updates would require recomputation of $st$. Again, good with immutable arrays. Works with non-invertible functions.\\
+    Code.
+
+    \section{Fenwick Tree}
+    Aka Binary Indexed Tree (BIT). References - \href{https://cp-algorithms.com/data_structures/fenwick.html}{cp-algos}, \href{https://www.geeksforgeeks.org/binary-indexed-tree-or-fenwick-tree-2/}{gfg}.
+
+    \begin{itemize}
+        \item We saw that precomputing results of certain intervals helps in answering queries faster.
+        \item Suppose these are computed into an array $BIT$. Let the interval be $[g(i),i]$. Then, with sum as an example, $BIT[i] = \sum_{j=g(i)}^i a[j]$.
+        \item $g(i)=i$ makes $BIT=a$. Costly queries.
+        \item $g(i)=0$ makes $BIT=p$. Costly updates.
+        \item Pseudocode for updates and queries looks like
+
+\begin{lstlisting}[language=C++]
+query(int r):
+    res = 0
+    while (r >= 0):     // [g(r), r] U [g(g(r)-1), g(r)-1] U ...
+        res += t[r]
+        r = g(r) - 1
+    return res
+
+increase(int i, int delta):
+    for all j with g(j) <= i <= j:
+        t[j] += delta
+\end{lstlisting}
+
+        \item As we saw, every number can be uniquely represented as a sum of distinct powers of two. Here, length of $[g(i),i]$ is the smallest power of two in this unique representation. So, $g(i) = i-(i \& -i)+1$, where $i \& -i$ gives the least significant set bit of $i$:
+        \begin{align*}
+            i &= (0\dots 0)10110\\
+            -i &= (1\dots 1)01010\\
+            i \& -i &= (0\dots 0)00010
+        \end{align*}
+        We use 1-indexed implementation. Example:
+        $$a[1\dots 13] = a[1\dots (1101)_2] = a[13\dots 13]\cup a[9\dots 12]\cup a[1\dots 8]$$
+
+        \item Updates: We want to increase $a[13]$ by $5$. Then, we need to add $5$ to all $BIT[i]$ that have $a[13]$ as part of their sums. For example, $[g(14),14]=[13,14]$ but $[g(15),15]=[15,15]$. So, we add $5$ to $BIT[14]$. The idea is to repeatedly add the least significant set bit:
+        $$13 \xrightarrow[]{[1101,?]} 14 \xrightarrow[]{[1110,?]} 16 \dots$$
+    \end{itemize}
+
+    \image{0.6}{../images/bit.png}
+
+    \noindent This choice of $g(i)$ allows both queries $[1,r]$ and updates in $O(\log n)$. However, for queries $[l,r]$, invertible operations are required.\\
+    Code.
+
+    \section{Segment Tree}
+
+    Divide-and-conquer approach. References - \href{https://cp-algorithms.com/data_structures/segment_tree.html}{cp-algos}, \href{https://www.geeksforgeeks.org/segment-tree-data-structure/}{gfg}, \href{https://codeforces.com/blog/entry/18051}{CF}.
+
+    Example with $a = [1, 3, -2, 8, -7]$
+    \image{0.5}{../images/segtree.png}
+    \begin{figure}[h!]
+        \begin{minipage}{.45\textwidth}
+            \image{1.0}{../images/segtree-queries.png}
+            \captionof{figure}{Sum $a[2\dots 4]$}
+        \end{minipage}
+        \begin{minipage}{.45\textwidth}
+            \image{1.0}{../images/segtree-updates.png}
+            \captionof{figure}{Update $a[2]$}
+        \end{minipage}
+    \end{figure}
+
+    \begin{itemize}
+        \item Underlying data structure is an array.
+        \item Queries and updates in $O(\log n)$. Larger constants than BIT.
+        \item Works with non-invertible functions as well.
+    \end{itemize}
+
+    \section{Todos}
+    Check sheet.
+
+\end{sloppypar}
+\end{document}
