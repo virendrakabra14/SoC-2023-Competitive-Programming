@@ -1,0 +1,150 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, top=3cm, bottom=3cm, left=3cm, right=3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[T1]{fontenc}    % https://tex.stackexchange.com/questions/453540/
+\usepackage{csquotes}       % https://www.overleaf.com/learn/latex/Typesetting_quotations
+\usepackage{listings}       % https://www.overleaf.com/learn/latex/Code_listing
+\usepackage{xcolor}
+\usepackage{mathtools}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Competitive Programming}
+\rhead{Week-7}
+\cfoot{\thepage}
+
+\newcommand{\B}[1]{\textbf{#1}}
+\newcommand{\I}[1]{\textit{#1}}
+\newcommand{\T}[1]{\texttt{#1}}
+\newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+\newcommand{\image}[2]{\
+    \begin{center}\
+        \includegraphics[width = #1\linewidth]{#2}\
+    \end{center}\
+}
+
+\title{\textbf{SoC 2023: Competitive Programming \\ {\Large Week-7: Flows and Tries}}}
+\author{Mentor: Virendra Kabra}
+\date{Summer 2023}
+
+\begin{document}
+\begin{sloppypar}       % for overfull, etc.
+
+    \maketitle
+    \tableofcontents
+    \thispagestyle{empty}
+
+    \newpage
+    % \setcounter{page}{1}
+
+    \noindent Reference: \href{https://cp-algorithms.com/graph/edmonds_karp.html}{cp-algos}, CLRS
+
+    \section{Flows}
+
+    \subsection{Terminology}
+
+    \begin{itemize}
+        \item Network: Directed graph with a capacity function $c:E\rightarrow \mathbb{R}^+_0$. Special vertices source $s$ and sink $t$. Analogous to a network of water pipes.
+        \item Flow: Function $f$ assigning flows to edges such that for all $e\in E$, $f(e) \le c(e)$. Further, for all $u\in V\backslash \{s,t\}$, incoming and outgoing flows must be equal:
+        $$\sum_{(v,u)\in E}f((v,u)) = \sum_{(u,v)\in E}f((u,v))$$
+        \item Can deduce $$\sum_{(s,u)\in E}f((s,u)) = \sum_{(u,t)\in E}f((u,t))$$
+    \end{itemize}
+
+    \image{0.6}{../images/Flow1.png}
+
+    \begin{itemize}
+        \item Value of a flow: Sum of outgoing flows from source. Equivalent to sum of incoming flows to sink.
+        \item Maximal flow: Flow with maximum value.
+    \end{itemize}
+
+    We need to find a maximal flow.
+
+    \subsection{Ford-Fulkerson Method}
+
+    \begin{itemize}
+        \item Residual capacity of an edge: $r(e) = c(e) - f(e)$. By an earlier constraint, this is non-negative.
+        \item Residual network: Add (directed) reverse edges, with zero capacity and $-f(e)$ flow. Note that reverse edges also have non-negative residual flow. These can be used to reverse an earlier assigned flow. For example, $(A,D)$ has a residual capacity of 3. ``Using'' it is same as undoing $(D,A)$ flow:\\
+        \begin{minipage}{.45\textwidth}
+            \image{1.0}{../images/Flow7.png}
+        \end{minipage}
+        \begin{minipage}{.45\textwidth}
+            \image{1.0}{../images/Flow8.png}
+        \end{minipage}
+        \item Augmenting path: A simple path in the residual network, along edges with positive residual capacity.
+        \item Pseudocode
+\begin{lstlisting}[]
+while there is an augmenting path P from s to t:
+    c = capacity of P
+    for e in P:
+        r(e) -= c
+        r(e_reverse) += c
+max_flow = sum of outgoing flows from s
+\end{lstlisting}
+        \item Edmonds-Karp implementation: Use BFS to find augmenting paths.
+    \end{itemize}
+
+    \subsection{Example: \href{https://www.geeksforgeeks.org/maximum-bipartite-matching/}{Maximum Bipartite Matching}}
+    \begin{itemize}
+        \item X applicants and Y jobs. Each applicant $x$ applies for some set of jobs $Y_x$. Each job can only admit one applicant, and each applicant can only get one job. Find an assignment of jobs that fills maximum number of vacancies.
+        \item Matching of a graph: Set of edges such that on any vertex, at most one of these is incident.
+        \item Maximum matching: Any matching with the largest number of edges.
+        \item We represent this as a bipartite graph, and the problem reduces to find its maximum matching.
+        \image{0.6}{../images/maximum_matching1.png}
+        \begin{minipage}{.45\textwidth}
+            \image{1.0}{../images/maximum_matching2.png}
+        \end{minipage}
+        \begin{minipage}{.45\textwidth}
+            \image{1.0}{../images/maximum_matching21.png}
+        \end{minipage}
+    \end{itemize}
+
+    \section{Tries}
+    \noindent Reference: \href{https://www.geeksforgeeks.org/trie-insert-and-search/}{gfg}.\\
+    \noindent To efficiently store and search strings.
+
+    \image{0.6}{../images/trie1.png}
+
+    \noindent Insertion
+    \image{0.7}{../images/trie2.png}
+
+    \noindent Search
+    \image{0.7}{../images/trie3.png}
+
+    \section{Todos}
+    Check sheet.
+
+\end{sloppypar}
+\end{document}
